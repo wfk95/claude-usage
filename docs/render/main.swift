@@ -14,11 +14,23 @@ app.setActivationPolicy(.accessory)
 let outDir = "docs/assets"
 try? FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)
 
-let iso = ISO8601DateFormatter()
-func inMinutes(_ m: Double) -> String { iso.string(from: Date().addingTimeInterval(m * 60)) }
+// Fixed reference clock so renders are deterministic (no diff churn on rebuild).
+func date(_ y: Int, _ mo: Int, _ d: Int, _ h: Int, _ mi: Int) -> Date {
+    var c = DateComponents()
+    (c.year, c.month, c.day, c.hour, c.minute) = (y, mo, d, h, mi)
+    return Calendar(identifier: .gregorian).date(from: c)!
+}
+let now = date(2026, 6, 3, 10, 8)        // a fixed "now"
+let weeklyReset = date(2026, 6, 6, 13, 0) // Saturday 1:00 PM
 
-func bucket(_ pct: Double, minutes: Double) -> UsageBucket {
-    UsageBucket(utilization: pct, resets_at: inMinutes(minutes))
+let iso = ISO8601DateFormatter()
+func atMinutes(_ m: Double) -> String { iso.string(from: now.addingTimeInterval(m * 60)) }
+
+func session(_ pct: Double, minutes: Double) -> UsageBucket {
+    UsageBucket(utilization: pct, resets_at: atMinutes(minutes))
+}
+func weekly(_ pct: Double) -> UsageBucket {
+    UsageBucket(utilization: pct, resets_at: iso.string(from: weeklyReset))
 }
 
 // MARK: - PNG output
@@ -44,10 +56,10 @@ func write(_ rep: NSBitmapImageRep?, _ name: String) {
 // MARK: - Menu bar strip (uses the real MenuBarRenderer)
 
 @MainActor
-func menuBarStrip(_ state: LoadState, settings: SettingsStore, scale: CGFloat = 3) -> NSBitmapImageRep {
+func menuBarStrip(_ state: LoadState, settings: SettingsStore, now: Date, scale: CGFloat = 3) -> NSBitmapImageRep {
     var rep: NSBitmapImageRep!
     NSAppearance(named: .darkAqua)!.performAsCurrentDrawingAppearance {
-        let content = MenuBarRenderer.content(for: state, settings: settings)
+        let content = MenuBarRenderer.content(for: state, settings: settings, now: now)
         let titleSize = content.title.size()
         let padX: CGFloat = 13
         let gap: CGFloat = 5
@@ -80,9 +92,9 @@ func menuBarStrip(_ state: LoadState, settings: SettingsStore, scale: CGFloat = 
 // MARK: - Panel (uses the real UsageView)
 
 @MainActor
-func panel(_ state: LoadState, settings: SettingsStore, lastUpdated: Date? = Date()) -> NSBitmapImageRep? {
+func panel(_ state: LoadState, settings: SettingsStore, now: Date, lastUpdated: Date?) -> NSBitmapImageRep? {
     let model = AppModel(previewState: state, lastUpdated: lastUpdated)
-    let root = UsageView(model: model, settings: settings, onQuit: {})
+    let root = UsageView(model: model, settings: settings, onQuit: {}, now: now)
         .background(Color(NSColor.windowBackgroundColor))
 
     // Host in a real (offscreen) window so AppKit-backed controls — the toggles,
@@ -110,39 +122,39 @@ let defaults = SettingsStore(showWeeklyInBar: true, weeklyThreshold: 50)
 
 // Menu bar at three usage levels.
 write(menuBarStrip(.loaded(Usage(
-    five_hour: bucket(12, minutes: 200),
-    seven_day: bucket(8, minutes: 4000),
-    seven_day_sonnet: bucket(1, minutes: 4000),
-    seven_day_opus: nil)), settings: defaults), "menubar-low.png")
+    five_hour: session(12, minutes: 199),
+    seven_day: weekly(8),
+    seven_day_sonnet: weekly(1),
+    seven_day_opus: nil)), settings: defaults, now: now), "menubar-low.png")
 
 write(menuBarStrip(.loaded(Usage(
-    five_hour: bucket(64, minutes: 48),
-    seven_day: bucket(33, minutes: 4000),
-    seven_day_sonnet: bucket(9, minutes: 4000),
-    seven_day_opus: nil)), settings: defaults), "menubar-mid.png")
+    five_hour: session(64, minutes: 48),
+    seven_day: weekly(33),
+    seven_day_sonnet: weekly(9),
+    seven_day_opus: nil)), settings: defaults, now: now), "menubar-mid.png")
 
 write(menuBarStrip(.loaded(Usage(
-    five_hour: bucket(88, minutes: 12),
-    seven_day: bucket(71, minutes: 4000),
-    seven_day_sonnet: bucket(23, minutes: 4000),
-    seven_day_opus: nil)), settings: defaults), "menubar-high.png")
+    five_hour: session(88, minutes: 12),
+    seven_day: weekly(71),
+    seven_day_sonnet: weekly(23),
+    seven_day_opus: nil)), settings: defaults, now: now), "menubar-high.png")
 
-write(menuBarStrip(.signedOut, settings: defaults), "menubar-signedout.png")
+write(menuBarStrip(.signedOut, settings: defaults, now: now), "menubar-signedout.png")
 
 // Panel states.
 write(panel(.loaded(Usage(
-    five_hour: bucket(34, minutes: 52),
-    seven_day: bucket(18, minutes: 4000),
-    seven_day_sonnet: bucket(2, minutes: 4000),
-    seven_day_opus: nil)), settings: defaults), "panel-loaded.png")
+    five_hour: session(34, minutes: 52),
+    seven_day: weekly(18),
+    seven_day_sonnet: weekly(2),
+    seven_day_opus: nil)), settings: defaults, now: now, lastUpdated: now), "panel-loaded.png")
 
 write(panel(.loaded(Usage(
-    five_hour: bucket(88, minutes: 12),
-    seven_day: bucket(71, minutes: 4000),
-    seven_day_sonnet: bucket(23, minutes: 4000),
-    seven_day_opus: nil)), settings: defaults), "panel-high.png")
+    five_hour: session(88, minutes: 12),
+    seven_day: weekly(71),
+    seven_day_sonnet: weekly(23),
+    seven_day_opus: nil)), settings: defaults, now: now, lastUpdated: now), "panel-high.png")
 
-write(panel(.signedOut, settings: defaults, lastUpdated: nil), "panel-signedout.png")
+write(panel(.signedOut, settings: defaults, now: now, lastUpdated: nil), "panel-signedout.png")
 }
 
 MainActor.assumeIsolated { renderAll() }

@@ -45,7 +45,7 @@ struct MenuBarContent {
 /// app (`AppDelegate`) and the documentation snapshot renderer, so both stay
 /// pixel-identical.
 enum MenuBarRenderer {
-    static func content(for state: LoadState, settings: SettingsStore) -> MenuBarContent {
+    static func content(for state: LoadState, settings: SettingsStore, now: Date = Date()) -> MenuBarContent {
         switch state {
         case .signedOut:
             return MenuBarContent(image: nil, title: plain("Sign in"))
@@ -63,7 +63,7 @@ enum MenuBarRenderer {
             let pct = session?.percent ?? 0
             let image = MenuBarIcon.donut(percent: pct, color: UsageFormat.color(for: pct))
 
-            let reset = UsageFormat.compactReset(session?.resetDate)
+            let reset = UsageFormat.compactReset(session?.resetDate, now: now)
             let base = reset.isEmpty ? "\(pct)%" : "\(pct)% · \(reset)"
             let title = NSMutableAttributedString(attributedString: plain(base))
 

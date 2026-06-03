@@ -14,9 +14,16 @@ echo "› Compiling…"
 rm -rf "$BUNDLE"
 mkdir -p "$MACOS" "$RESOURCES"
 
-swiftc -O -target "$TARGET" \
-    -o "$MACOS/$APP" \
-    Sources/*.swift
+# UNIVERSAL=1 builds a universal (arm64 + x86_64) binary for distribution.
+if [ "${UNIVERSAL:-0}" = "1" ]; then
+    echo "  (universal: arm64 + x86_64)"
+    swiftc -O -target arm64-apple-macosx13.0  -o "$MACOS/$APP.arm64"  Sources/*.swift
+    swiftc -O -target x86_64-apple-macosx13.0 -o "$MACOS/$APP.x86_64" Sources/*.swift
+    lipo -create "$MACOS/$APP.arm64" "$MACOS/$APP.x86_64" -output "$MACOS/$APP"
+    rm "$MACOS/$APP.arm64" "$MACOS/$APP.x86_64"
+else
+    swiftc -O -target "$TARGET" -o "$MACOS/$APP" Sources/*.swift
+fi
 
 echo "› Bundling icon…"
 [ -f Resources/AppIcon.icns ] || ./make_icon.sh

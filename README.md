@@ -33,9 +33,21 @@ you've used.
 
 ## Requirements
 
-- macOS 13 (Ventura) or later
-- Apple Silicon (the build targets `arm64`; see *Build a universal binary* below for Intel)
-- Xcode Command Line Tools (`xcode-select --install`) — no full Xcode needed
+- macOS 13 (Ventura) or later (Apple Silicon or Intel)
+- To build from source: Xcode Command Line Tools (`xcode-select --install`) — no full Xcode needed
+
+## Download (pre-built)
+
+Grab the latest **ClaudeUsage.zip** from the
+[**Releases**](https://github.com/wfk95/claude-usage/releases) page, unzip it,
+and move `ClaudeUsage.app` to `/Applications`.
+
+The app is ad-hoc signed but **not notarized** (there's no paid Apple Developer
+account behind it), so macOS Gatekeeper warns on first launch. Allow it once:
+
+- **Right-click** the app → **Open** → **Open**, or
+- open it, then **System Settings → Privacy & Security → Open Anyway**, or
+- run: `xattr -dr com.apple.quarantine /Applications/ClaudeUsage.app`
 
 ## Build & run
 
@@ -51,14 +63,12 @@ code it shows you, and paste it back into the app. Done.
 
 ### Build a universal binary (Apple Silicon + Intel)
 
-Edit `build.sh` and change the compile step to build both architectures:
-
 ```bash
-swiftc -O -target arm64-apple-macosx13.0  -o "$MACOS/$APP-arm64"  Sources/*.swift
-swiftc -O -target x86_64-apple-macosx13.0 -o "$MACOS/$APP-x86_64" Sources/*.swift
-lipo -create "$MACOS/$APP-arm64" "$MACOS/$APP-x86_64" -output "$MACOS/$APP"
-rm "$MACOS/$APP-arm64" "$MACOS/$APP-x86_64"
+UNIVERSAL=1 ./build.sh
 ```
+
+`./release.sh` does this and zips the result — the same artifact the GitHub
+Actions release workflow ships when you push a `v*` tag.
 
 ## How it works
 

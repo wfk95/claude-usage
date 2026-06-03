@@ -104,9 +104,10 @@ enum UsageFormat {
     }
 
     /// Compact reset for the menu bar title, e.g. "52m" or "1h4m". Empty if unknown.
-    static func compactReset(_ date: Date?) -> String {
+    /// `now` is injectable so doc snapshots render deterministically.
+    static func compactReset(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "" }
-        let secs = date.timeIntervalSinceNow
+        let secs = date.timeIntervalSince(now)
         if secs <= 0 { return "0m" }
         let h = Int(secs) / 3600
         let m = (Int(secs) % 3600) / 60
@@ -114,9 +115,9 @@ enum UsageFormat {
     }
 
     /// "resets in 1h 4m" for short windows, "resets Sat 1:00 PM" for weekly ones.
-    static func resetText(_ date: Date?) -> String {
+    static func resetText(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "" }
-        let secs = date.timeIntervalSinceNow
+        let secs = date.timeIntervalSince(now)
         if secs <= 0 { return "resetting…" }
         if secs < 12 * 3600 {
             let h = Int(secs) / 3600

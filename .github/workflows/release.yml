@@ -1,0 +1,53 @@
+name: Release
+
+# Cut a release by pushing a version tag, e.g.:
+#   git tag v1.0 && git push origin v1.0
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal app
+        run: UNIVERSAL=1 ./build.sh
+
+      - name: Zip the app
+        run: ditto -c -k --keepParent build/ClaudeUsage.app ClaudeUsage.zip
+
+      - name: Write release notes
+        run: |
+          cat > NOTES.md <<'EOF'
+          ## Claude Usage ${{ github.ref_name }}
+
+          A menu bar app that shows your Claude plan usage at a glance.
+          See the [documentation](https://wfk95.github.io/claude-usage/).
+
+          ### Install
+          1. Download **ClaudeUsage.zip** below and unzip it.
+          2. Move **ClaudeUsage.app** to your `/Applications` folder.
+          3. The app is ad-hoc signed but **not notarized** (no paid Apple
+             Developer account), so macOS Gatekeeper will warn on first launch.
+             Allow it once, either way:
+             - **Right-click** the app → **Open** → **Open**, _or_
+             - open it, then go to **System Settings → Privacy & Security** and
+               click **Open Anyway**, _or_
+             - run in Terminal:
+               `xattr -dr com.apple.quarantine /Applications/ClaudeUsage.app`
+          4. Click **Sign in** in the menu bar and follow the prompts.
+
+          Universal build — runs on Apple Silicon and Intel, macOS 13+.
+          EOF
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" ClaudeUsage.zip
+             --title "Claude Usage ${{ github.ref_name }}"
+             --notes-file NOTES.md
