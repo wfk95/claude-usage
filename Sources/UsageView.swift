@@ -5,7 +5,12 @@ struct UsageView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var settings = SettingsStore.shared
     var onQuit: () -> Void
-    var now: Date = Date() // injectable for deterministic doc snapshots
+    /// Injected as a fixed value for deterministic doc snapshots; nil in the live
+    /// app, where `effectiveNow` falls back to the model's ticking clock. A frozen
+    /// `Date()` default here would peg the "resets in …" countdown to app-launch
+    /// time and drift from reality the longer the app stays open.
+    var now: Date? = nil
+    private var effectiveNow: Date { now ?? model.clock }
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
 
     var body: some View {
@@ -144,7 +149,7 @@ struct UsageView: View {
                 }
             }
             .frame(height: 6)
-            Text(UsageFormat.resetText(bucket.resetDate, now: now))
+            Text(UsageFormat.resetText(bucket.resetDate, now: effectiveNow))
                 .font(.system(size: 10.5))
                 .foregroundStyle(.tertiary)
         }
@@ -176,7 +181,7 @@ struct UsageView: View {
     private func relative(_ date: Date) -> String {
         let f = RelativeDateTimeFormatter()
         f.unitsStyle = .short
-        return f.localizedString(for: date, relativeTo: now)
+        return f.localizedString(for: date, relativeTo: effectiveNow)
     }
 }
 

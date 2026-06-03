@@ -17,8 +17,16 @@ final class AppModel: ObservableObject {
     @Published private(set) var state: LoadState = .signedOut
     @Published private(set) var lastUpdated: Date?
 
+    /// A coarse wall clock that ticks every 30s. The countdowns ("resets in …",
+    /// the compact menu-bar reset) are `resetDate − now`, so without a ticking
+    /// `now` they freeze at whatever time they were last rendered — the menu bar
+    /// at the last data fetch (up to ~5 min stale), the popover at app launch.
+    /// Publishing `clock` re-renders both against the current time so they agree.
+    @Published private(set) var clock = Date()
+
     private let oauth = OAuth()
     private var timer: Timer?
+    private var clockTimer: Timer?
 
     // Polling is deliberately gentle: usage changes over hours, and the endpoint
     // is rate-limited, so we poll slowly, throttle opportunistic refreshes, and
@@ -49,7 +57,18 @@ final class AppModel: ObservableObject {
 
     func start() {
         guard OAuthToken.load() != nil else { return }
+        startClock()
         refresh(force: true)
+    }
+
+    /// Ticks `clock` every 30s so minute-granular countdowns stay live and the
+    /// menu bar and popover never drift apart. 30s keeps the displayed minute
+    /// within half a minute of accurate without per-second wakeups.
+    private func startClock() {
+        guard clockTimer == nil else { return }
+        clockTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.clock = Date() } // hop to the actor like the poll timer
+        }
     }
 
     /// `force` bypasses the throttle/backoff (used by the manual refresh button).
@@ -128,6 +147,8 @@ final class AppModel: ObservableObject {
         Keychain.clear()
         timer?.invalidate()
         timer = nil
+        clockTimer?.invalidate()
+        clockTimer = nil
         state = .signedOut
         lastUpdated = nil
     }

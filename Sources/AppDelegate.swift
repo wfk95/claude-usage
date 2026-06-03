@@ -51,6 +51,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &cancellables)
 
+        // …on every clock tick, so the compact reset countdown stays live
+        // between data fetches instead of freezing at the last fetch time.
+        model.$clock
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.render() }
+            .store(in: &cancellables)
+
         // …and re-render when the weekly-in-bar preference changes.
         SettingsStore.shared.objectWillChange
             .receive(on: RunLoop.main)
