@@ -21,6 +21,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Single instance: if another copy is already running (e.g. a login-item
+        // launch plus a manual one), quit so we don't double the request rate.
+        let others = NSRunningApplication.runningApplications(
+            withBundleIdentifier: Bundle.main.bundleIdentifier ?? "com.fk.ClaudeUsage")
+            .filter { $0 != .current }
+        if !others.isEmpty {
+            NSApp.terminate(nil)
+            return
+        }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.target = self
         statusItem.button?.action = #selector(togglePopover(_:))

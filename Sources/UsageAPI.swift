@@ -35,11 +35,13 @@ struct Usage: Codable {
 
 enum UsageError: LocalizedError {
     case unauthorized
+    case rateLimited(retryAfter: TimeInterval?)
     case http(Int)
     case badResponse
     var errorDescription: String? {
         switch self {
         case .unauthorized: return "Your session expired. Please sign in again."
+        case .rateLimited: return "Rate limited — will retry shortly."
         case .http(let c): return "Couldn't load usage (HTTP \(c))."
         case .badResponse: return "Couldn't read the usage response."
         }
@@ -84,6 +86,9 @@ enum UsageAPI {
             return usage
         case 401, 403:
             throw UsageError.unauthorized
+        case 429:
+            let retryAfter = http.value(forHTTPHeaderField: "retry-after").flatMap(TimeInterval.init)
+            throw UsageError.rateLimited(retryAfter: retryAfter)
         default:
             throw UsageError.http(http.statusCode)
         }

@@ -74,7 +74,7 @@ struct UsageView: View {
             Text("Claude Usage")
                 .font(.system(size: 13, weight: .semibold))
             Spacer()
-            Button(action: { model.refresh() }) {
+            Button(action: { model.refresh(force: true) }) {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.plain)
@@ -101,7 +101,7 @@ struct UsageView: View {
                 Label(message, systemImage: "exclamationmark.triangle")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
-                Button("Try again") { model.refresh() }
+                Button("Try again") { model.refresh(force: true) }
             }
         case .loaded(let usage):
             VStack(alignment: .leading, spacing: 16) {
