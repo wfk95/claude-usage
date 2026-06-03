@@ -20,4 +20,11 @@ final class SettingsStore: ObservableObject {
         showWeeklyInBar = d.bool(forKey: K.showWeekly)
         weeklyThreshold = d.integer(forKey: K.threshold)
     }
+
+    /// A non-persisting instance for previews/snapshots. `didSet` observers do
+    /// not run during init, so this never writes to UserDefaults.
+    init(showWeeklyInBar: Bool, weeklyThreshold: Int) {
+        self.showWeeklyInBar = showWeeklyInBar
+        self.weeklyThreshold = weeklyThreshold
+    }
 }

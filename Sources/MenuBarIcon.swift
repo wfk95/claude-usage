@@ -34,3 +34,56 @@ enum MenuBarIcon {
         return img
     }
 }
+
+/// What the menu bar shows: the doughnut image plus the text beside it.
+struct MenuBarContent {
+    let image: NSImage?
+    let title: NSAttributedString
+}
+
+/// Builds the menu bar's image + title for a given state. Shared by the live
+/// app (`AppDelegate`) and the documentation snapshot renderer, so both stay
+/// pixel-identical.
+enum MenuBarRenderer {
+    static func content(for state: LoadState, settings: SettingsStore) -> MenuBarContent {
+        switch state {
+        case .signedOut:
+            return MenuBarContent(image: nil, title: plain("Sign in"))
+
+        case .loading:
+            return MenuBarContent(image: MenuBarIcon.donut(percent: 0, color: .secondaryLabelColor),
+                                  title: plain("…"))
+
+        case .error:
+            return MenuBarContent(image: MenuBarIcon.donut(percent: 100, color: .systemRed),
+                                  title: plain("!"))
+
+        case .loaded(let usage):
+            let session = usage.five_hour
+            let pct = session?.percent ?? 0
+            let image = MenuBarIcon.donut(percent: pct, color: UsageFormat.color(for: pct))
+
+            let reset = UsageFormat.compactReset(session?.resetDate)
+            let base = reset.isEmpty ? "\(pct)%" : "\(pct)% · \(reset)"
+            let title = NSMutableAttributedString(attributedString: plain(base))
+
+            if settings.showWeeklyInBar,
+               let weekly = usage.seven_day,
+               weekly.percent >= settings.weeklyThreshold {
+                title.append(plain("  ·  ", color: .secondaryLabelColor))
+                title.append(NSAttributedString(string: "wk \(weekly.percent)%", attributes: [
+                    .font: NSFont.menuBarFont(ofSize: 0),
+                    .foregroundColor: UsageFormat.color(for: weekly.percent),
+                ]))
+            }
+            return MenuBarContent(image: image, title: title)
+        }
+    }
+
+    static func plain(_ s: String, color: NSColor = .labelColor) -> NSAttributedString {
+        NSAttributedString(string: s, attributes: [
+            .font: NSFont.menuBarFont(ofSize: 0),
+            .foregroundColor: color,
+        ])
+    }
+}

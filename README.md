@@ -7,18 +7,19 @@ resets, plus your weekly limits in a click‑down panel.
 No more digging through the website or app just to see how much of your session
 you've used.
 
-```
-🍩 34% · 52m            ← always visible in the menu bar
-────────────────────────
- Current session   34%
- ▓▓▓▓▓░░░░░░░░░░    resets in 52m
- Weekly · all      18%
- ▓▓░░░░░░░░░░░░░    resets Sat 1:00 PM
- Weekly · Sonnet    2%
- ░░░░░░░░░░░░░░░    resets Sat 1:00 PM
-```
+<p align="center">
+  <img src="docs/assets/menubar-low.png" height="30" alt="low usage">
+  &nbsp;
+  <img src="docs/assets/menubar-mid.png" height="30" alt="mid usage">
+  &nbsp;
+  <img src="docs/assets/menubar-high.png" height="30" alt="high usage, weekly shown">
+</p>
+<p align="center"><img src="docs/assets/panel-loaded.png" width="300" alt="The usage panel"></p>
 
-> _Add a screenshot here once you've grabbed one (`screencapture -i shot.png`)._
+📖 **[Full documentation &amp; screenshots →](https://wfk95.github.io/claude-usage/)**
+
+> Every screenshot is rendered from the app's real code — run `./docs/build-docs.sh`
+> to regenerate them, so the docs never drift from the app.
 
 ## Features
 
@@ -82,6 +83,7 @@ the app never touches the entry the Claude CLI manages.
 ```
 build.sh              Compiles Sources/ into ClaudeUsage.app (no Xcode project)
 make_icon.{swift,sh}  Generates the app icon (Resources/AppIcon.icns)
+docs/                 GitBook-style site; build-docs.sh renders the screenshots
 Sources/
   AppDelegate.swift   Menu bar item, popover, sign-in dialog
   AppModel.swift      State + polling + formatting

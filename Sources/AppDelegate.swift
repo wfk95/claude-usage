@@ -75,51 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func render() {
         guard let button = statusItem.button else { return }
-        let settings = SettingsStore.shared
-
-        switch currentState {
-        case .signedOut:
-            button.image = nil
-            button.attributedTitle = plainTitle("Sign in")
-
-        case .loading:
-            button.image = MenuBarIcon.donut(percent: 0, color: .secondaryLabelColor)
-            button.imagePosition = .imageLeft
-            button.attributedTitle = plainTitle("…")
-
-        case .error:
-            button.image = MenuBarIcon.donut(percent: 100, color: .systemRed)
-            button.imagePosition = .imageLeft
-            button.attributedTitle = plainTitle("!")
-
-        case .loaded(let usage):
-            let session = usage.five_hour
-            let pct = session?.percent ?? 0
-            button.image = MenuBarIcon.donut(percent: pct, color: UsageFormat.color(for: pct))
-            button.imagePosition = .imageLeft
-
-            let reset = UsageFormat.compactReset(session?.resetDate)
-            let base = reset.isEmpty ? "\(pct)%" : "\(pct)% · \(reset)"
-            let title = NSMutableAttributedString(attributedString: plainTitle(base))
-
-            if settings.showWeeklyInBar,
-               let weekly = usage.seven_day,
-               weekly.percent >= settings.weeklyThreshold {
-                title.append(plainTitle("  ·  ", color: .secondaryLabelColor))
-                title.append(NSAttributedString(string: "wk \(weekly.percent)%", attributes: [
-                    .font: NSFont.menuBarFont(ofSize: 0),
-                    .foregroundColor: UsageFormat.color(for: weekly.percent),
-                ]))
-            }
-            button.attributedTitle = title
-        }
-    }
-
-    private func plainTitle(_ s: String, color: NSColor = .labelColor) -> NSAttributedString {
-        NSAttributedString(string: s, attributes: [
-            .font: NSFont.menuBarFont(ofSize: 0),
-            .foregroundColor: color,
-        ])
+        let content = MenuBarRenderer.content(for: currentState, settings: SettingsStore.shared)
+        button.image = content.image
+        button.imagePosition = content.image == nil ? .noImage : .imageLeft
+        button.attributedTitle = content.title
     }
 
     // MARK: - Popover

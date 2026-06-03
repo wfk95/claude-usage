@@ -27,6 +27,13 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Builds a model fixed in a given state for previews and doc snapshots.
+    /// Does not load credentials or start polling.
+    init(previewState: LoadState, lastUpdated: Date? = nil) {
+        self.state = previewState
+        self.lastUpdated = lastUpdated
+    }
+
     func start() {
         guard OAuthToken.load() != nil else { return }
         refresh()

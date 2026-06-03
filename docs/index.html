@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Usage — Documentation</title>
+<meta name="description" content="A tiny macOS menu bar app that shows your Claude plan usage at a glance.">
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1d1d1f;
+    --muted: #6b6b70;
+    --line: #e7e7ea;
+    --sidebar: #fafafa;
+    --accent: #d6573f;
+    --accent-soft: #fbeae5;
+    --code-bg: #f5f5f7;
+    --radius: 12px;
+    --maxw: 760px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code { background: var(--code-bg); padding: .12em .4em; border-radius: 6px; font-size: .88em; }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; border-radius: var(--radius);
+    overflow-x: auto; font-size: 13px; line-height: 1.55; border: 1px solid var(--line);
+  }
+  pre code { background: none; padding: 0; }
+
+  /* Layout */
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  nav.side {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    background: var(--sidebar); border-right: 1px solid var(--line); padding: 28px 22px;
+  }
+  nav.side .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+  nav.side .brand img { width: 40px; height: 40px; border-radius: 9px; }
+  nav.side .brand b { font-size: 15px; }
+  nav.side .brand span { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+  nav.side h4 {
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    margin: 22px 0 8px;
+  }
+  nav.side a {
+    display: block; color: var(--fg); padding: 5px 10px; border-radius: 8px;
+    font-size: 14px; margin: 1px 0;
+  }
+  nav.side a:hover { background: var(--accent-soft); text-decoration: none; color: var(--accent); }
+
+  main { padding: 0 0 120px; }
+  .content { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+  section { padding-top: 56px; }
+  section > h2 {
+    font-size: 26px; margin: 0 0 6px; letter-spacing: -.01em; scroll-margin-top: 20px;
+  }
+  section .lede { color: var(--muted); margin-top: 0; }
+  h3 { font-size: 17px; margin: 28px 0 8px; }
+
+  /* Hero */
+  header.hero {
+    background: linear-gradient(160deg, #fbeae5 0%, #ffffff 70%);
+    border-bottom: 1px solid var(--line);
+    padding: 64px 28px 52px;
+  }
+  header.hero .inner { max-width: var(--maxw); margin: 0 auto; display: flex; gap: 26px; align-items: center; flex-wrap: wrap; }
+  header.hero img.icon { width: 96px; height: 96px; border-radius: 21px; box-shadow: 0 10px 30px rgba(0,0,0,.14); }
+  header.hero h1 { font-size: 34px; margin: 0 0 8px; letter-spacing: -.02em; }
+  header.hero p { font-size: 17px; color: var(--muted); margin: 0; max-width: 460px; }
+  .pill {
+    display: inline-block; margin-top: 14px; font-size: 12.5px; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid #f1cdc3; padding: 4px 11px; border-radius: 999px;
+  }
+
+  /* Shots */
+  .menubar-shot { height: 30px; width: auto; vertical-align: middle; }
+  .shotrow { display: flex; flex-direction: column; gap: 14px; margin: 18px 0; }
+  .shotrow .item { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .shotrow .item .cap { font-size: 13.5px; color: var(--muted); }
+  .panel-shot {
+    width: 300px; max-width: 100%; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.10);
+  }
+  .panels { display: flex; gap: 26px; flex-wrap: wrap; margin: 20px 0; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; text-align: center; }
+
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; font-size: 14px;
+  }
+  .steps { counter-reset: s; padding: 0; list-style: none; margin: 18px 0; }
+  .steps li { position: relative; padding: 4px 0 18px 44px; }
+  .steps li::before {
+    counter-increment: s; content: counter(s);
+    position: absolute; left: 0; top: 2px; width: 28px; height: 28px;
+    background: var(--accent); color: #fff; border-radius: 50%;
+    display: grid; place-items: center; font-size: 14px; font-weight: 600;
+  }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  footer.foot { border-top: 1px solid var(--line); padding: 28px; text-align: center; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.side { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="side">
+    <div class="brand">
+      <img src="assets/icon.png" alt="Claude Usage icon">
+      <div><b>Claude Usage</b><span>menu bar app</span></div>
+    </div>
+    <h4>Guide</h4>
+    <a href="#overview">Overview</a>
+    <a href="#menubar">The menu bar</a>
+    <a href="#panel">The panel</a>
+    <a href="#settings">Settings</a>
+    <a href="#signin">Signing in</a>
+    <h4>Reference</h4>
+    <a href="#install">Install &amp; build</a>
+    <a href="#how">How it works</a>
+    <a href="#layout">Project layout</a>
+    <a href="#disclaimer">Disclaimer</a>
+    <h4>Links</h4>
+    <a href="https://github.com/wfk95/claude-usage">GitHub repo ↗</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="inner">
+        <img class="icon" src="assets/icon.png" alt="App icon">
+        <div>
+          <h1>Claude Usage</h1>
+          <p>A tiny macOS menu bar app that shows your Claude plan usage at a glance — a doughnut gauge with your current‑session percentage and the time until it resets.</p>
+          <span class="pill">Every screenshot on this page is rendered from the app's real code.</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <section id="overview">
+        <h2>Overview</h2>
+        <p class="lede">No more digging through the website or app just to check how much of your session you've used.</p>
+        <p>Claude Usage lives in your menu bar. At a glance you see your current 5‑hour session usage as a colour‑coded doughnut and how long until it resets. Click it for the full breakdown — session plus weekly limits — and a few preferences.</p>
+        <div class="panels">
+          <figure>
+            <img class="panel-shot" src="assets/panel-loaded.png" alt="The usage panel">
+            <figcaption>The click‑down panel</figcaption>
+          </figure>
+          <div>
+            <h3>At a glance</h3>
+            <div class="shotrow">
+              <div class="item"><img class="menubar-shot" src="assets/menubar-low.png" alt="low usage"><span class="cap">Plenty left — green</span></div>
+              <div class="item"><img class="menubar-shot" src="assets/menubar-mid.png" alt="mid usage"><span class="cap">Getting there — yellow</span></div>
+              <div class="item"><img class="menubar-shot" src="assets/menubar-high.png" alt="high usage"><span class="cap">Nearly full — red, weekly shown</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="menubar">
+        <h2>The menu bar</h2>
+        <p class="lede">A doughnut gauge plus your session percentage and time‑to‑reset.</p>
+        <p>The doughnut fills clockwise with your current‑session usage and is colour‑coded so you can read it without thinking:</p>
+        <table>
+          <thead><tr><th>Colour</th><th>Session usage</th><th>Looks like</th></tr></thead>
+          <tbody>
+            <tr><td>🟢 Green</td><td>below 50%</td><td><img class="menubar-shot" src="assets/menubar-low.png" alt=""></td></tr>
+            <tr><td>🟡 Yellow</td><td>50–80%</td><td><img class="menubar-shot" src="assets/menubar-mid.png" alt=""></td></tr>
+            <tr><td>🔴 Red</td><td>80% and up</td><td><img class="menubar-shot" src="assets/menubar-high.png" alt=""></td></tr>
+          </tbody>
+        </table>
+        <p>The time beside it counts down to the session reset — <code>52m</code>, or <code>1h4m</code> when there's more than an hour to go. When your weekly usage gets high, it appears too (the <code>wk 71%</code> above); see <a href="#settings">Settings</a>.</p>
+      </section>
+
+      <section id="panel">
+        <h2>The panel</h2>
+        <p class="lede">Click the menu bar item for the full breakdown.</p>
+        <p>The panel shows all three limits the Claude apps report — your current session, weekly across all models, and weekly Sonnet — each with a progress bar and reset time. The refresh control (top‑right) forces an update; it also refreshes automatically every 60 seconds and whenever you open it.</p>
+        <div class="panels">
+          <figure>
+            <img class="panel-shot" src="assets/panel-loaded.png" alt="Panel, typical usage">
+            <figcaption>Typical day</figcaption>
+          </figure>
+          <figure>
+            <img class="panel-shot" src="assets/panel-high.png" alt="Panel, high usage">
+            <figcaption>Session running hot</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="settings">
+        <h2>Settings</h2>
+        <p class="lede">A couple of preferences, right in the panel.</p>
+        <h3>Launch at login</h3>
+        <p>Toggle on to have Claude Usage start automatically every time you log in (via Apple's <code>SMAppService</code>). The toggle mirrors the real system state.</p>
+        <h3>Show weekly in the menu bar</h3>
+        <p>Keep the bar clean most of the time, but surface your weekly all‑models figure once it crosses a threshold you choose (default <strong>50%</strong>, adjustable in 5% steps). Below the threshold it stays hidden; above it, you get the <code>wk 71%</code> readout next to your session.</p>
+        <div class="panels">
+          <figure>
+            <img class="panel-shot" src="assets/panel-signedout.png" alt="Settings and sign-in">
+            <figcaption>Settings stay visible even when signed out</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="signin">
+        <h2>Signing in</h2>
+        <p class="lede">A standard, standalone sign‑in — your token never leaves your Mac.</p>
+        <ol class="steps">
+          <li>Click <strong>Sign in</strong> in the menu bar. Your browser opens the Claude authorization page.</li>
+          <li>Approve the request, then copy the code Claude shows you.</li>
+          <li>Paste it into the dialog the app pops up (⌘V works) and you're in.</li>
+        </ol>
+        <div class="note">Your access and refresh tokens are stored in your own macOS Keychain entry and refresh automatically. The app keeps its credentials entirely separate from the Claude CLI's.</div>
+      </section>
+
+      <section id="install">
+        <h2>Install &amp; build</h2>
+        <p class="lede">macOS 13+. Xcode Command Line Tools — no full Xcode needed.</p>
+        <pre><code>git clone https://github.com/wfk95/claude-usage.git
+cd claude-usage
+./build.sh
+open build/ClaudeUsage.app</code></pre>
+        <p>Click <strong>Sign in</strong>, approve in the browser, paste the code back. Done. To start it automatically, flip on <em>Launch at login</em> in the panel.</p>
+      </section>
+
+      <section id="how">
+        <h2>How it works</h2>
+        <p>The app reads the same usage data the Claude apps show, from the endpoint the Claude CLI uses for its <code>/usage</code> command:</p>
+        <pre><code>GET https://api.anthropic.com/api/oauth/usage
+Authorization: Bearer &lt;your token&gt;
+anthropic-beta: oauth-2025-04-20</code></pre>
+        <p>It returns the 5‑hour session bucket and the weekly buckets, which map directly to the bars in the panel. Sign‑in uses the standard OAuth 2.0 authorization‑code + PKCE flow.</p>
+        <div class="note">The screenshots on this page aren't hand‑captured — a small harness links the app's real source and renders <code>MenuBarRenderer</code> and the real <code>UsageView</code> to PNGs. Run <code>./docs/build-docs.sh</code> to regenerate them, so the docs can never drift from the app.</div>
+      </section>
+
+      <section id="layout">
+        <h2>Project layout</h2>
+        <pre><code>build.sh              Compiles Sources/ into ClaudeUsage.app
+make_icon.{swift,sh}  Generates the app icon
+docs/build-docs.sh    Renders these screenshots from real code
+Sources/
+  AppDelegate.swift   Menu bar item, popover, sign-in dialog
+  AppModel.swift      State + polling + formatting
+  OAuth.swift         PKCE sign-in, token exchange/refresh
+  UsageAPI.swift      Usage endpoint + response model
+  UsageView.swift     The click-down panel
+  MenuBarIcon.swift   Doughnut + shared MenuBarRenderer
+  SettingsStore.swift Persisted preferences
+  Keychain.swift      Token storage
+  LaunchAtLogin.swift Login-item toggle</code></pre>
+      </section>
+
+      <section id="disclaimer">
+        <h2>Disclaimer</h2>
+        <p>This is an <strong>unofficial</strong> tool and is <strong>not affiliated with, endorsed by, or supported by Anthropic</strong>. It relies on a private, undocumented endpoint that may change or stop working at any time, and is intended for personal use with your own account. “Claude” is a trademark of Anthropic — this project uses the name only to describe what it does. Use at your own risk.</p>
+        <p>Released under the <a href="https://github.com/wfk95/claude-usage/blob/main/LICENSE">MIT License</a>.</p>
+      </section>
+    </div>
+
+    <footer class="foot">
+      Claude Usage · © 2026 Fengkai Wan · <a href="https://github.com/wfk95/claude-usage">github.com/wfk95/claude-usage</a>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
