@@ -71,7 +71,8 @@ final class AppModel: ObservableObject {
     private func startClock() {
         guard clockTimer == nil else { return }
         clockTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.clock = Date() } // hop to the actor like the poll timer
+            guard let self else { return }
+            Task { @MainActor in self.clock = Date() } // hop to the actor like the poll timer
         }
     }
 
