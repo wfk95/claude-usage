@@ -71,10 +71,14 @@ enum MenuBarRenderer {
                let weekly = usage.seven_day,
                weekly.percent >= settings.weeklyThreshold {
                 title.append(plain("  ·  ", color: .secondaryLabelColor))
-                title.append(NSAttributedString(string: "wk \(weekly.percent)%", attributes: [
+                title.append(NSAttributedString(string: "Week \(weekly.percent)%", attributes: [
                     .font: NSFont.menuBarFont(ofSize: 0),
                     .foregroundColor: UsageFormat.color(for: weekly.percent),
                 ]))
+                let wkReset = UsageFormat.compactResetDays(weekly.resetDate, now: now)
+                if !wkReset.isEmpty {
+                    title.append(plain(" · \(wkReset)", color: .secondaryLabelColor))
+                }
             }
             return MenuBarContent(image: image, title: title)
         }

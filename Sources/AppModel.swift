@@ -15,7 +15,12 @@ enum LoadState {
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var state: LoadState = .signedOut
-    @Published private(set) var lastUpdated: Date?
+
+    /// True while a poll is in flight. The footer surfaces this as "Updating…" and
+    /// is otherwise empty: the manual refresh control lives in the header, so the
+    /// footer is just a transient status line, not a stale-timestamp readout. This
+    /// also doubles as the in-flight guard, so a burst of triggers can't overlap.
+    @Published private(set) var isUpdating = false
 
     /// A coarse wall clock that ticks every 30s. The countdowns ("resets in …",
     /// the compact menu-bar reset) are `resetDate − now`, so without a ticking
@@ -38,7 +43,6 @@ final class AppModel: ObservableObject {
     private var lastSuccess: Date?
     private var backoffUntil: Date?
     private var failureCount = 0
-    private var inFlight = false
 
     private var hasData: Bool { if case .loaded = state { return true }; return false }
 
@@ -50,9 +54,9 @@ final class AppModel: ObservableObject {
 
     /// Builds a model fixed in a given state for previews and doc snapshots.
     /// Does not load credentials or start polling.
-    init(previewState: LoadState, lastUpdated: Date? = nil) {
+    init(previewState: LoadState, isUpdating: Bool = false) {
         self.state = previewState
-        self.lastUpdated = lastUpdated
+        self.isUpdating = isUpdating
     }
 
     func start() {
@@ -80,20 +84,19 @@ final class AppModel: ObservableObject {
             if let until = backoffUntil, now < until { return }
             if let last = lastSuccess, now.timeIntervalSince(last) < openThrottle { return }
         }
-        guard !inFlight else { return }
+        guard !isUpdating else { return }
         guard let token = OAuthToken.load() else {
             state = .signedOut
             return
         }
         if !hasData { state = .loading } // only show the spinner when we have nothing to show
 
-        inFlight = true
+        isUpdating = true
         Task {
-            defer { inFlight = false }
+            defer { isUpdating = false }
             do {
                 let usage = try await UsageAPI.fetch(token: token)
                 self.state = .loaded(usage)
-                self.lastUpdated = Date()
                 self.lastSuccess = Date()
                 self.backoffUntil = nil
                 self.failureCount = 0
@@ -150,7 +153,7 @@ final class AppModel: ObservableObject {
         clockTimer?.invalidate()
         clockTimer = nil
         state = .signedOut
-        lastUpdated = nil
+        isUpdating = false
     }
 
     var isSignedIn: Bool {
@@ -171,8 +174,8 @@ enum UsageFormat {
         }
     }
 
-    /// Compact reset for the menu bar title, e.g. "52m" or "1h4m". Empty if unknown.
-    /// `now` is injectable so doc snapshots render deterministically.
+    /// Compact reset for the menu bar session chip, e.g. "52m" or "1h4m". Empty if
+    /// unknown. `now` is injectable so doc snapshots render deterministically.
     static func compactReset(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "" }
         let secs = date.timeIntervalSince(now)
@@ -182,7 +185,22 @@ enum UsageFormat {
         return h > 0 ? "\(h)h\(m)m" : "\(m)m"
     }
 
-    /// "resets in 1h 4m" for short windows, "resets Sat 1:00 PM" for weekly ones.
+    /// Single-unit countdown for the menu bar weekly chip, e.g. "3d", "5h", "20m".
+    /// Weekly windows span days, so one coarse unit reads cleaner in the bar than
+    /// the session chip's hours+minutes.
+    static func compactResetDays(_ date: Date?, now: Date = Date()) -> String {
+        guard let date else { return "" }
+        let secs = Int(date.timeIntervalSince(now))
+        if secs <= 0 { return "now" }
+        if secs >= 86400 { return "\(secs / 86400)d" }
+        if secs >= 3600 { return "\(secs / 3600)h" }
+        return "\(max(1, secs / 60))m"
+    }
+
+    /// Reset caption under each popover bar. Short windows (the session) read
+    /// "resets in 1h 4m". Weekly windows show both the calendar date and a coarse
+    /// countdown — "resets Sat, Jun 6 · in 3d 2h" — so it's clear WHEN the window
+    /// refreshes and HOW LONG away that is.
     static func resetText(_ date: Date?, now: Date = Date()) -> String {
         guard let date else { return "" }
         let secs = date.timeIntervalSince(now)
@@ -194,7 +212,11 @@ enum UsageFormat {
             return "resets in \(m)m"
         }
         let f = DateFormatter()
-        f.dateFormat = "EEE h:mm a"
-        return "resets \(f.string(from: date))"
+        f.dateFormat = "EEE, MMM d"
+        let s = Int(secs)
+        let d = s / 86400
+        let h = (s % 86400) / 3600
+        let countdown = d >= 1 ? (h > 0 ? "in \(d)d \(h)h" : "in \(d)d") : "in \(h)h"
+        return "resets \(f.string(from: date)) · \(countdown)"
     }
 }

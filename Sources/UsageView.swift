@@ -157,8 +157,8 @@ struct UsageView: View {
 
     private var footer: some View {
         HStack {
-            if let updated = model.lastUpdated {
-                Text("Updated \(relative(updated))")
+            if model.isUpdating {
+                Text("Updating…")
                     .font(.system(size: 10.5))
                     .foregroundStyle(.tertiary)
             }
@@ -176,12 +176,6 @@ struct UsageView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-    }
-
-    private func relative(_ date: Date) -> String {
-        let f = RelativeDateTimeFormatter()
-        f.unitsStyle = .short
-        return f.localizedString(for: date, relativeTo: effectiveNow)
     }
 }
 
