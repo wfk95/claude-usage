@@ -92,8 +92,8 @@ func menuBarStrip(_ state: LoadState, settings: SettingsStore, now: Date, scale:
 // MARK: - Panel (uses the real UsageView)
 
 @MainActor
-func panel(_ state: LoadState, settings: SettingsStore, now: Date, lastUpdated: Date?) -> NSBitmapImageRep? {
-    let model = AppModel(previewState: state, lastUpdated: lastUpdated)
+func panel(_ state: LoadState, settings: SettingsStore, now: Date) -> NSBitmapImageRep? {
+    let model = AppModel(previewState: state)
     let root = UsageView(model: model, settings: settings, onQuit: {}, now: now)
         .background(Color(NSColor.windowBackgroundColor))
 
@@ -146,15 +146,15 @@ write(panel(.loaded(Usage(
     five_hour: session(34, minutes: 52),
     seven_day: weekly(18),
     seven_day_sonnet: weekly(2),
-    seven_day_opus: nil)), settings: defaults, now: now, lastUpdated: now), "panel-loaded.png")
+    seven_day_opus: nil)), settings: defaults, now: now), "panel-loaded.png")
 
 write(panel(.loaded(Usage(
     five_hour: session(88, minutes: 12),
     seven_day: weekly(71),
     seven_day_sonnet: weekly(23),
-    seven_day_opus: nil)), settings: defaults, now: now, lastUpdated: now), "panel-high.png")
+    seven_day_opus: nil)), settings: defaults, now: now), "panel-high.png")
 
-write(panel(.signedOut, settings: defaults, now: now, lastUpdated: nil), "panel-signedout.png")
+write(panel(.signedOut, settings: defaults, now: now), "panel-signedout.png")
 }
 
 MainActor.assumeIsolated { renderAll() }
