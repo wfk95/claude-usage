@@ -10,6 +10,12 @@ MACOS="$BUNDLE/Contents/MacOS"
 RESOURCES="$BUNDLE/Contents/Resources"
 TARGET="arm64-apple-macosx13.0"
 
+# Marketing version baked into Info.plist. CI passes the pushed tag via $VERSION
+# (e.g. "v1.2"); a local build falls back to the latest tag, then a 0.0.0 dev
+# placeholder. The leading "v" is stripped so the plist gets a clean "1.2".
+VERSION="${VERSION:-$(git describe --tags --abbrev=0 2>/dev/null || echo 0.0.0)}"
+VERSION="${VERSION#v}"
+
 echo "› Compiling…"
 rm -rf "$BUNDLE"
 mkdir -p "$MACOS" "$RESOURCES"
@@ -41,8 +47,8 @@ cat > "$BUNDLE/Contents/Info.plist" <<PLIST
     <key>CFBundleExecutable</key><string>$APP</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleVersion</key><string>1.0</string>
-    <key>CFBundleShortVersionString</key><string>1.0</string>
+    <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>
     <key>NSHighResolutionCapable</key><true/>
